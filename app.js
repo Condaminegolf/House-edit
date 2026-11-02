@@ -226,7 +226,7 @@
   function showAuth(){
     const logged=client?!!user:false;
     const notice=authNotice?`<div class="auth-notice" role="status">${esc(authNotice)}</div>`:'';
-    const password=`<div class="formline"><label for="auth-password">Password</label><input id="auth-password" name="password" type="password" placeholder="Enter your password" minlength="8" required autocomplete="current-password"></div>`;
+    const password=`<div class="formline"><label for="auth-password">Password</label><input id="auth-password" name="password" type="password" placeholder="Enter your password" maxlength="128" required autocomplete="current-password"></div>`;
     let inside='';
     if(logged){
       inside=`<h1>Your shared home.</h1><p>Start one home or join your invitation. You can sign in with this same account on any device.</p><form data-form="create-project"><h3>Start a new home</h3><div class="formline"><label>Project name</label><input name="name" value="Our Home" maxlength="80" required></div><div class="formline"><label>Your name</label><input name="display_name" placeholder="Your name" maxlength="60" required></div><button class="btn primary" type="submit">Create our home</button></form><div class="divider" style="margin:25px 0"></div><form data-form="join-project"><h3>Join an existing home</h3><div class="formline"><label>Your name</label><input name="display_name" maxlength="60" required placeholder="Your name"></div><div class="formline"><label>Invitation code</label><input name="code" maxlength="30" required placeholder="Paste your private code"></div><button class="btn soft" type="submit">Join the shared project</button></form><button class="btn ghost sm" style="margin-top:16px" data-action="signout">Sign out</button>`;
