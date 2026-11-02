@@ -13,3 +13,17 @@
 
 .stat-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:500px){.stat-grid.three{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-grid.three .stat:last-child{grid-column:span 2}}
+
+/* V2: automatic product-link previews in the Add option dialogue */
+.product-lookup{border:1px dashed #c9d4c5;background:#f6f8f2;border-radius:13px;min-height:84px;overflow:hidden;margin:12px 0 15px}
+.product-lookup-placeholder,.product-lookup-result{display:flex;gap:13px;align-items:center;padding:13px}
+.product-lookup-placeholder strong,.product-lookup-result strong{display:block;font-size:13px;color:var(--ink);line-height:1.35}
+.product-lookup-placeholder small,.product-lookup-result small,.field-hint{display:block;font-size:11px;color:var(--ink2);line-height:1.5;margin-top:3px}
+.product-lookup-symbol{height:48px;width:48px;display:grid;place-items:center;border-radius:10px;background:#e3ebe0;color:#496349;font-size:24px;flex:none}
+.product-lookup-thumb{width:96px;height:88px;border-radius:9px;background:#f0ede7;overflow:hidden;flex:none}
+.product-lookup-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+.product-lookup[data-status="pending"] .product-lookup-symbol{animation:productSearch 1.4s infinite ease-in-out}
+.product-lookup[data-status="warn"]{border-color:#dcbda4;background:#fdf7f0}
+.product-lookup[data-status="success"]{border-color:#afc3a7;background:#f5f8f2}
+@keyframes productSearch{50%{opacity:.38;transform:rotate(18deg)}}
+@media(max-width:540px){.product-lookup-thumb{width:78px;height:78px}.modal{padding:20px}.form-grid{grid-template-columns:1fr}}
