@@ -27,3 +27,6 @@
 .product-lookup[data-status="success"]{border-color:#afc3a7;background:#f5f8f2}
 @keyframes productSearch{50%{opacity:.38;transform:rotate(18deg)}}
 @media(max-width:540px){.product-lookup-thumb{width:78px;height:78px}.modal{padding:20px}.form-grid{grid-template-columns:1fr}}
+
+.product-lookup .retry-product{margin-top:8px;padding:6px 10px;border:1px solid #d5c0af;border-radius:7px;background:#fffaf5;color:#815c42;display:inline-flex;width:auto;font-size:11px}
+.product-lookup .retry-product:hover{background:#f5e8d8}

@@ -63,12 +63,29 @@
   function totalKnownPrice(){return approvedDecisions().reduce((sum,d)=>sum+(Number(state.options.find(o=>o.id===d.winner_option_id)?.price)||0),0)}
   function roomIcon(room){return room.emoji||ROOMS.find(r=>r[0].toLowerCase()===room.name.toLowerCase())?.[1]||'🏡'}
   function roomClass(room){const n=room.name.toLowerCase();return n.includes('kitchen')?'room-kitchen':n.includes('bath')?'room-bathroom':n.includes('living')?'room-living':n.includes('bed')?'room-bedroom':n.includes('laundry')?'room-laundry':n.includes('outdoor')?'room-outdoor':'room-other'}
+  // Product images can be rejected by retailer hotlink protection. Try the image
+  // cache first, then the original, then Microlink's image delivery endpoint.
+  // Each candidate is attempted at most once; old saved items benefit too.
+  function photoCandidates(imageUrl, sourceUrl){
+    const image=safeImageUrl(imageUrl), source=normalizeSource(sourceUrl);
+    if(!image)return [];
+    if(image.startsWith('data:'))return [image];
+    const relay='https://wsrv.nl/?url='+encodeURIComponent(image)+'&w=1200&output=webp';
+    const embedded=source && !isImageLink(source) ? 'https://api.microlink.io?url='+encodeURIComponent(source)+'&embed=image.url' : '';
+    return [...new Set(source?[relay,image,embedded].filter(Boolean):[image,relay])];
+  }
+  function photoTag(url,source,alt,extra='',privateAsset=false){
+    const candidates=privateAsset?[safeImageUrl(url)].filter(Boolean):photoCandidates(url,source);
+    if(!candidates.length)return '';
+    return `<img src="${esc(candidates[0])}" data-image-fallbacks="${esc(JSON.stringify(candidates.slice(1)))}" ${extra} alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer">`;
+  }
   function imageMarkup(opt, cls='sample'){
     const url=safeImageUrl(opt.display_url||opt.image_url);
-    const image=url?`<img src="${esc(url)}" loading="lazy" alt="${esc(opt.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'">`:'';
+    const image=photoTag(url,opt.image_path?'':opt.source_url,opt.title,'',Boolean(opt.image_path));
     const fallback=opt.visual||'visual-blank';
-    return `<div class="${cls} ${esc(fallback)}">${image}<div class="${cls==='sample'?'sample-icon':'img-fallback'}" ${image?'style="display:none"':''}>${!image?'✳':'✳'}</div></div>`;
+    return `<div class="${cls} ${esc(fallback)}">${image}<div class="${cls==='sample'?'sample-icon':'img-fallback'}" ${image?'style="display:none"':''}>✳</div></div>`;
   }
+
   function voteDots(dec){const optIds=new Set(optionOf(dec).map(o=>o.id));return `<div style="display:flex" title="People who have voted">${state.members.map(m=>{const voted=state.votes.some(v=>v.user_id===m.user_id&&optIds.has(v.option_id));return `<span class="vote-dot ${voted?'':'missing'}" style="${voted?'background:'+color(m.role):''}" title="${esc(m.display_name)}${voted?' voted':' has not voted'}">${voted?esc(initials(m.display_name)):'?'}</span>`}).join('')}</div>`}
   function statusPill(dec){const v=dec.status||'open';return `<span class="tag ${esc(v)}">${{open:'Under review',approved:'Approved',ordered:'Ordered',installed:'Installed'}[v]||esc(v)}</span>`}
   function header(){return `<header class="topline"><div class="breadcrumbs">${esc(state.project.name)} <span style="color:#c2c8bc"> / </span> ${route.page==='decision'?'Making a selection':route.page==='home'?'Overview':route.page==='selections'?'Final selections':route.page==='people'?'The team':'Decisions'}</div><div class="top-actions">${mode==='demo'?'<span class="pill demo">◌ Demo · this browser only</span>':'<span class="pill">● Shared project</span>'}<button class="btn sm" data-action="refresh">↻ <span class="hide-small">Refresh</span></button></div></header>`}
@@ -96,7 +113,7 @@
   function closeModal(){++lookupRun;clearTimeout(lookupTimeout);$('modal-root').innerHTML=''}
   function askNewRoom(){modal('Add a room',`<form data-form="room"><div class="formline"><label>Room name</label><input name="name" placeholder="e.g. Dining Room" maxlength="60" required autofocus></div><div class="formline"><label>Room icon</label><select name="emoji">${['🏠','🍽️','🛋️','🛁','🛏️','🌿','🚪','💡','🪑','🧱'].map(e=>`<option>${e}</option>`).join('')}</select></div><div class="modal-foot"><button type="button" class="btn" data-action="close-modal">Cancel</button><button class="btn primary" type="submit">Add room</button></div></form>`)}
   function askNewDecision(){modal('New design decision',`<p class="prompt-note">What's something you want the group to choose together?</p><form data-form="decision"><div class="formline"><label>Decision title</label><input name="title" placeholder="e.g. Laundry floor tiles" maxlength="110" required autofocus></div><div class="formline"><label>Which room?</label><select name="room_id" required>${state.rooms.map(r=>`<option value="${esc(r.id)}" ${route.room===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}</select></div><div class="formline"><label>Notes (optional)</label><textarea name="notes" maxlength="650" placeholder="Dimensions, preferences, budget or any must-haves..."></textarea></div><div class="modal-foot"><button type="button" class="btn" data-action="close-modal">Cancel</button><button class="btn primary" type="submit">Create decision</button></div></form>`)}
-  function askNewOption(decId){const d=state.decisions.find(d=>d.id===decId);if(!d)return;modal('Add an option',`<p class="prompt-note">For: ${esc(d.title)}. Paste a product link to find its image and name automatically.</p><form data-form="option" data-decision="${esc(decId)}"><div class="formline"><label>Product / supplier link</label><input name="source_url" type="url" placeholder="https://shop.com.au/products/your-tile" autocomplete="url" autofocus><small class="field-hint">Paste a retailer's product page — we'll find its photo.</small></div><div class="product-lookup" id="product-lookup" aria-live="polite"><div class="product-lookup-placeholder"><span class="product-lookup-symbol">↗</span><div><strong>Product preview</strong><small>Paste a link to load an image and product details.</small></div></div></div><div class="formline"><label>Option name</label><input name="title" placeholder="Automatically filled from the link, or type a name" maxlength="110"></div><div class="form-grid"><div class="formline"><label>Price (AUD, optional)</label><input name="price" type="number" min="0" step="0.01" placeholder="e.g. 229.00"></div><div class="formline"><label>Upload your own photo (optional)</label><input name="photo" type="file" accept="image/jpeg,image/png,image/webp"></div></div><div class="formline"><label>Or paste a direct image URL (optional)</label><input name="image_url" type="url" placeholder="https://.../product.jpg"><small class="field-hint">An uploaded photo or direct image URL takes priority over the product link.</small></div><div class="formline"><label>Notes</label><textarea name="notes" maxlength="650" placeholder="What do you like about it? Size, colour, finish..."></textarea></div><p class="prompt-note">Product link previews are fetched through Microlink. Some shops restrict previews. You can always add a photo manually. Check product details and prices before ordering.</p><div class="modal-foot"><button type="button" class="btn" data-action="close-modal">Cancel</button><button class="btn primary" type="submit">Add to comparison</button></div></form>`)}
+  function askNewOption(decId){const d=state.decisions.find(d=>d.id===decId);if(!d)return;modal('Add an option',`<p class="prompt-note">For: ${esc(d.title)}. Paste a product link to find its image and name automatically.</p><form data-form="option" data-decision="${esc(decId)}"><div class="formline"><label>Product / supplier link</label><input name="source_url" type="text" inputmode="url" spellcheck="false" placeholder="Paste product link (https://… or www.… )" autocomplete="url" autofocus><small class="field-hint">Paste a product-page link and the image and name will fill in automatically. Some shops block third-party previews.</small></div><div class="product-lookup" id="product-lookup" aria-live="polite"><div class="product-lookup-placeholder"><span class="product-lookup-symbol">↗</span><div><strong>Product preview</strong><small>Paste a link to load an image and product details.</small></div></div></div><div class="formline"><label>Option name</label><input name="title" placeholder="Automatically filled from the link, or type a name" maxlength="110"></div><div class="form-grid"><div class="formline"><label>Price (AUD, optional)</label><input name="price" type="number" min="0" step="0.01" placeholder="e.g. 229.00"></div><div class="formline"><label>Upload your own photo (optional)</label><input name="photo" type="file" accept="image/jpeg,image/png,image/webp"></div></div><div class="formline"><label>Or paste a direct image URL (optional)</label><input name="image_url" type="url" placeholder="https://.../product.jpg"><small class="field-hint">An uploaded photo or direct image URL takes priority over the product link.</small></div><div class="formline"><label>Notes</label><textarea name="notes" maxlength="650" placeholder="What do you like about it? Size, colour, finish..."></textarea></div><p class="prompt-note">A public link-preview service reads the product page. If a shop blocks it, you can still save the link and add a photo later. Verify prices before ordering.</p><div class="modal-foot"><button type="button" class="btn" data-action="close-modal">Cancel</button><button class="btn primary" type="submit">Add to comparison</button></div></form>`)}
 
   // An HTML-only static site cannot read other shops' HTML in the browser because of CORS.
   // Microlink resolves publicly available page metadata. Cache avoids repeated requests on paste/save.
@@ -111,31 +128,51 @@
   function lookupMessage(message,level='info'){
     const panel=$('product-lookup');if(!panel)return;
     panel.dataset.status=level;
-    panel.innerHTML=`<div class="product-lookup-placeholder"><span class="product-lookup-symbol">${level==='pending'?'◌':level==='success'?'✓':'↗'}</span><div><strong>${level==='pending'?'Finding the product…':level==='success'?'Product details found':level==='warn'?'Could not load a photo':'Product preview'}</strong><small>${esc(message)}</small></div></div>`;
+    const activeUrl=panel.closest('form')?.elements.source_url.value?.trim();
+    panel.innerHTML=`<div class="product-lookup-placeholder"><span class="product-lookup-symbol">${level==='pending'?'◌':level==='success'?'✓':'↗'}</span><div><strong>${level==='pending'?'Finding the product…':level==='success'?'Product photo ready':level==='warn'?'Automatic preview unavailable':'Product preview'}</strong><small>${esc(message)}</small>${level==='warn'&&activeUrl?'<button class="btn sm ghost retry-product" type="button" data-action="retry-product">↻ Try again</button>':''}</div></div>`;
   }
   function showProductPreview(data){
     const panel=$('product-lookup');if(!panel)return;
-    panel.dataset.status=data.image_url?'success':'warn';
-    if(!data.image_url){lookupMessage('Product page found, but no usable photo was returned. Upload your own photo or paste a direct image link.','warn');return;}
-    panel.innerHTML=`<div class="product-lookup-result"><div class="product-lookup-thumb"><img src="${esc(data.image_url)}" alt="Product image from the supplier website" referrerpolicy="no-referrer"></div><div><strong>${esc(data.title||'Product image found')}</strong><small>Image retrieved from the product link. You can replace it.</small></div></div>`;
-    const img=panel.querySelector('img');
-    if(img)img.addEventListener('error',()=>lookupMessage('The shop blocked the picture. Upload a photo or paste a direct image URL instead.','warn'),{once:true});
+    if(!data.image_url){lookupMessage('The link did not provide a photo. You can save the product link and name, or add a photo yourself.','warn');return;}
+    const img=photoTag(data.image_url,data.source_url,'Photo of '+(data.title||'product'),'data-product-preview="true"');
+    panel.dataset.status='pending';
+    panel.innerHTML=`<div class="product-lookup-result"><div class="product-lookup-thumb">${img}</div><div><strong>${esc(data.title||'Product image')}</strong><small class="photo-status">Checking that the retailer photo displays…</small></div></div>`;
+    const preview=panel.querySelector('img');
+    if(preview)preview.addEventListener('load',()=>{if(!preview.isConnected)return;panel.dataset.status='success';const line=panel.querySelector('.photo-status');if(line)line.textContent='Photo ready. It will be saved with this option.';});
+  }
+  function titleFromUrl(url){
+    try{
+      const link=new URL(url),parts=link.pathname.split('/').filter(Boolean);
+      const slug=decodeURIComponent(parts.at(-1)||link.hostname.replace(/^www\./,''));
+      return slug.replace(/\.(?:html?|php)$/i,'').replace(/[-_]+/g,' ').replace(/\s+/g,' ').trim().slice(0,110);
+    }catch{return '';}
   }
   async function fetchProductData(url){
     const source=normalizeSource(url);
-    if(!source)throw new Error('Enter a valid product URL beginning with https://');
-    if(isImageLink(source))return {title:'',image_url:source};
+    if(!source)throw new Error('Paste a valid product-page link (for example, https://shop.com.au/product).');
+    if(isImageLink(source))return {title:titleFromUrl(source),image_url:source,source_url:source};
     if(!productCache.has(source)){
       const promise=(async()=>{
         const controller=new AbortController();
-        const timeout=setTimeout(()=>controller.abort(),12500);
+        const timeout=setTimeout(()=>controller.abort(),20000);
         try{
           const response=await fetch('https://api.microlink.io?url='+encodeURIComponent(source),{signal:controller.signal});
-          if(!response.ok)throw new Error(response.status===429?'Link-preview daily limit reached. Please upload a photo.':'Product preview unavailable for this shop.');
-          const body=await response.json();
-          if(body.status!=='success')throw new Error(body.message||'This product page could not be previewed.');
+          let body={};try{body=await response.json()}catch{}
+          if(!response.ok||body.status!=='success'){
+            const code=String(body.code||'');
+            if(response.status===429||code==='ERATE')throw new Error('The free product-preview limit has been reached for today. Add a photo manually, or retry tomorrow.');
+            if(code==='EPROXYNEEDED'||code==='EPROXY')throw new Error('This retailer blocks automatic product previews. You can still save the link and upload a photo.');
+            if(code==='EBRWSRTIMEOUT'||code==='ETIMEOUT')throw new Error('This retailer took too long to respond. Try again, or add a photo manually.');
+            throw new Error('The product page could not be read by the preview service. You can still add it manually.');
+          }
           const meta=body.data||{};
-          return {title:String(meta.title||'').trim().slice(0,110),image_url:cleanUrl(meta.image?.url)};
+          const name=String(meta.title||'').replace(/\s*[|–—]\s*[^|–—]+$/, '').trim().slice(0,110);
+          if(/^(?:just a moment|access denied|403 forbidden|attention required|please enable javascript|one moment)/i.test(name))throw new Error('The retailer returned a security-check page instead of a product. Upload a photo if you need one.');
+          return {title:name||titleFromUrl(source),image_url:cleanUrl(typeof meta.image==='string'?meta.image:meta.image?.url),source_url:source};
+        }catch(err){
+          if(err.name==='AbortError')throw new Error('The product preview timed out. Try again or upload a photo.');
+          if(err instanceof TypeError)throw new Error('Could not contact the link-preview service. Check your connection or try again.');
+          throw err;
         }finally{clearTimeout(timeout)}
       })();
       productCache.set(source,promise);
@@ -161,11 +198,12 @@
       // Respect a manually provided image; otherwise preview the extracted photo.
       if(form.elements.photo.files?.length){lookupMessage('Your uploaded photo will be used.','success');return;}
       const custom=cleanUrl(form.elements.image_url.value);
-      showProductPreview({...data,image_url:custom||data.image_url});
+      showProductPreview({...data,image_url:custom||data.image_url,source_url:custom?'':source});
     }catch(err){
       if(run!==lookupRun||!form.isConnected)return;
       form.dataset.lookupUrl=source;form.dataset.lookupImage='';
-      lookupMessage(err.name==='AbortError'?'Preview timed out. Upload your own photo or try again.':(err.message||'Product image unavailable. Upload your own photo.'),'warn');
+      const name=form.elements.title;if(!name.value.trim())name.value=titleFromUrl(source);
+      lookupMessage(err.message||'Product image unavailable. You can add a photo manually.','warn');
     }
   }
   function queueProductLookup(form){
@@ -179,8 +217,8 @@
     const uploaded=form.elements.photo.files?.length;
     if(uploaded){lookupMessage('Your uploaded photo takes priority over the website image.','success');return;}
     const custom=cleanUrl(form.elements.image_url.value);
-    if(custom){showProductPreview({title:'Your chosen image',image_url:custom});return;}
-    if(form.dataset.lookupImage){showProductPreview({title:form.elements.title.value,image_url:form.dataset.lookupImage});return;}
+    if(custom){showProductPreview({title:'Your chosen image',image_url:custom,source_url:''});return;}
+    if(form.dataset.lookupImage){showProductPreview({title:form.elements.title.value,image_url:form.dataset.lookupImage,source_url:form.dataset.lookupUrl});return;}
     if(form.elements.source_url.value.trim())queueProductLookup(form);
     else lookupMessage('Paste a product link to see its photo.');
   }
@@ -212,9 +250,9 @@
     // Last-chance lookup: pressing Save immediately after paste still extracts the image.
     if(!(file&&file.size) && !image_url && normalizeSource(fields.source_url)){
       try{const data=await fetchProductData(fields.source_url);image_url=data.image_url||'';if(!fields.title.trim())fields.title=data.title||'';}
-      catch(err){console.info('Product link preview unavailable:',err.message)}
+      catch(err){console.info('Product link preview unavailable:',err.message);if(!fields.title.trim())fields.title=titleFromUrl(normalizeSource(fields.source_url));}
     }
-    if(!fields.title.trim())throw new Error('Enter an option name to save this product.');if(file&&file.size){if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Use a JPG, PNG or WebP image.');if(file.size>6*1024*1024)throw new Error('Maximum image size is 6 MB.');if(mode==='demo'){if(file.size>700*1024)throw new Error('Demo photo limit is 700 KB. Shared cloud uploads allow 6 MB.');image_url=await fileDataUrl(file);}else{const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[file.type];image_path=`${state.project.id}/${uuid()}.${ext}`;const {error}=await client.storage.from('house-option-images').upload(image_path,file,{contentType:file.type,upsert:false});if(error)throw error;}}
+    if(!fields.title.trim())fields.title=titleFromUrl(normalizeSource(fields.source_url));if(!fields.title.trim())throw new Error('Enter an option name to save this product.');if(file&&file.size){if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Use a JPG, PNG or WebP image.');if(file.size>6*1024*1024)throw new Error('Maximum image size is 6 MB.');if(mode==='demo'){if(file.size>700*1024)throw new Error('Demo photo limit is 700 KB. Shared cloud uploads allow 6 MB.');image_url=await fileDataUrl(file);}else{const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[file.type];image_path=`${state.project.id}/${uuid()}.${ext}`;const {error}=await client.storage.from('house-option-images').upload(image_path,file,{contentType:file.type,upsert:false});if(error)throw error;}}
     const obj={id:uuid(),decision_id,title:fields.title,notes:fields.notes,source_url:cleanUrl(fields.source_url),price:fields.price===''?null:Number(fields.price),image_url,image_path,created_by:user.id,created_at:new Date().toISOString()};if(mode==='demo')state.options.push(obj);else{const {error}=await client.from('house_options').insert(obj);if(error)throw error;}closeModal();toast('Option added')});}
   async function vote(option_id,choice){const old=getVote(option_id,user.id);await write(async()=>{if(mode==='demo'){if(old){state.votes=state.votes.filter(v=>!(v.option_id===option_id&&v.user_id===user.id));}if(old!==choice)state.votes.push({option_id,user_id:user.id,choice});}else{const query=old===choice?client.from('house_votes').delete().match({option_id,user_id:user.id}):client.from('house_votes').upsert({option_id,user_id:user.id,choice},{onConflict:'option_id,user_id'});const {error}=await query;if(error)throw error;}toast(old===choice?'Vote removed':'Your opinion saved');});}
   async function comment(option_id,body){await write(async()=>{const o={id:uuid(),option_id,user_id:user.id,body,created_at:new Date().toISOString()};if(mode==='demo')state.comments.push(o);else{const {error}=await client.from('house_comments').insert(o);if(error)throw error;}toast('Comment shared')});}
@@ -223,9 +261,20 @@
   function csvExport(){const rows=[['Room','Decision','Selected option','Price AUD','Status','Supplier URL','Notes']];for(const d of approvedDecisions()){const o=state.options.find(o=>o.id===d.winner_option_id);rows.push([roomOf(d)?.name||'',d.title,o?.title||'',o?.price??'',d.status,o?.source_url||'',o?.notes||'']);}const csv='\ufeff'+rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='the-house-edit-selections.csv';a.click();URL.revokeObjectURL(url);toast('Selections CSV exported');}
   function go(page,room){route.page=page;if(room!==undefined)route.room=room;route.search='';route.filter='all';route.decision=null;render();window.scrollTo({top:0,behavior:'smooth'});}
   function changePersona(id){if(mode!=='demo'||!state.members.some(m=>m.user_id===id))return;localStorage.setItem('the-house-edit-persona',id);user={id,role:memberOf(id).role};render();toast('Now previewing '+memberOf(id).display_name)}
+  // A failed image must never silently stay broken. This handles saved cards and
+  // live previews, including previously imported retailer images.
+  document.addEventListener('error',ev=>{
+    const img=ev.target;
+    if(!(img instanceof HTMLImageElement)||!img.hasAttribute('data-image-fallbacks'))return;
+    let rest=[];try{rest=JSON.parse(img.dataset.imageFallbacks||'[]')}catch{}
+    if(rest.length){img.dataset.imageFallbacks=JSON.stringify(rest.slice(1));img.src=rest[0];return;}
+    img.removeAttribute('data-image-fallbacks');img.style.display='none';
+    if(img.dataset.productPreview){lookupMessage('The retailer photo is unavailable, including through image relays. You can save the product link and add a photo manually.','warn');}
+    else if(img.nextElementSibling)img.nextElementSibling.style.display='grid';
+  },true);
   document.addEventListener('change',ev=>{if(ev.target.id==='demo-persona'||ev.target.id==='people-persona')changePersona(ev.target.value);if(ev.target.id==='room-filter'){route.room=ev.target.value;render()}const f=ev.target.closest('form[data-form="option"]');if(f){if(ev.target.name==='source_url')queueProductLookup(f);if(['photo','image_url'].includes(ev.target.name))refreshPreviewFromOverrides(f)}});
   document.addEventListener('input',ev=>{const optForm=ev.target.closest('form[data-form="option"]');if(optForm){if(ev.target.name==='source_url')queueProductLookup(optForm);if(ev.target.name==='image_url')refreshPreviewFromOverrides(optForm);}if(ev.target.id==='decision-search'){const sel=ev.target.selectionStart;route.search=ev.target.value;const html=viewDecisions();const holder=document.createElement('div');holder.innerHTML=html;const list=holder.querySelector('.decision-list')||holder.querySelector('.empty');const existing=document.querySelector('.decision-list')||document.querySelector('.empty');if(existing&&list){existing.replaceWith(list);}else{render();const input=$('decision-search');input.focus();input.setSelectionRange(sel,sel);}}});
-  document.addEventListener('click',async ev=>{const button=ev.target.closest('[data-action]');if(!button)return;const a=button.dataset.action,id=button.dataset.id;try{switch(a){case 'nav':go(button.dataset.page);break;case 'room':go('decisions',id);break;case 'filter':route.filter=button.dataset.filter;render();break;case 'decision':route.page='decision';route.decision=id;render();window.scrollTo(0,0);break;case 'add-room':askNewRoom();break;case 'add-decision':askNewDecision();break;case 'add-option':askNewOption(id);break;case 'close-modal':closeModal();break;case 'vote':await vote(button.dataset.option,button.dataset.vote);break;case 'approve':await approve(button.dataset.option);break;case 'reopen':await changeStatus(id,'open');break;case 'advance':await changeStatus(id,button.dataset.status);break;case 'export':csvExport();break;case 'reset-demo':resetDemo();break;case 'copy':await navigator.clipboard.writeText(button.dataset.code);toast('Private invitation code copied');break;case 'refresh':if(mode==='cloud')await cloudLoad();else render();toast('Up to date');break;case 'signout':await client.auth.signOut();user=null;state=null;if(channel){await client.removeChannel(channel);channel=null;}showAuth();break;}}catch(e){console.error(e);toast(e.message||'Something went wrong')}});
+  document.addEventListener('click',async ev=>{const button=ev.target.closest('[data-action]');if(!button)return;const a=button.dataset.action,id=button.dataset.id;try{switch(a){case 'nav':go(button.dataset.page);break;case 'room':go('decisions',id);break;case 'filter':route.filter=button.dataset.filter;render();break;case 'decision':route.page='decision';route.decision=id;render();window.scrollTo(0,0);break;case 'add-room':askNewRoom();break;case 'add-decision':askNewDecision();break;case 'add-option':askNewOption(id);break;case 'retry-product':{const form=button.closest('form[data-form="option"]');if(form){const source=normalizeSource(form.elements.source_url.value);if(source)productCache.delete(source);lookupProduct(form,source);}break;}case 'close-modal':closeModal();break;case 'vote':await vote(button.dataset.option,button.dataset.vote);break;case 'approve':await approve(button.dataset.option);break;case 'reopen':await changeStatus(id,'open');break;case 'advance':await changeStatus(id,button.dataset.status);break;case 'export':csvExport();break;case 'reset-demo':resetDemo();break;case 'copy':await navigator.clipboard.writeText(button.dataset.code);toast('Private invitation code copied');break;case 'refresh':if(mode==='cloud')await cloudLoad();else render();toast('Up to date');break;case 'signout':await client.auth.signOut();user=null;state=null;if(channel){await client.removeChannel(channel);channel=null;}showAuth();break;}}catch(e){console.error(e);toast(e.message||'Something went wrong')}});
   document.addEventListener('submit',async ev=>{const form=ev.target.closest('form[data-form]');if(!form)return;ev.preventDefault();if(busy)return;const data=new FormData(form),action=form.dataset.form;try{switch(action){case 'room':await addRoom(String(data.get('name')||'').trim(),String(data.get('emoji')||'🏡'));break;case 'decision':await addDecision(String(data.get('title')||'').trim(),data.get('room_id'),String(data.get('notes')||'').trim());break;case 'option':await addOption(form.dataset.decision,{title:String(data.get('title')||'').trim(),price:String(data.get('price')||''),notes:String(data.get('notes')||'').trim(),source_url:normalizeSource(String(data.get('source_url')||'')),image_url:String(data.get('image_url')||'')},data.get('photo'));break;case 'comment':{const body=String(data.get('body')||'').trim();if(body)await comment(form.dataset.option,body);break;}case 'signin':{busy=true;const {error}=await client.auth.signInWithOtp({email:String(data.get('email')).trim(),options:{emailRedirectTo:window.location.origin+window.location.pathname}});if(error)throw error;toast('Check your email for your sign-in link');showAuth();break;}case 'create-project':{busy=true;const {error}=await client.rpc('house_create_project',{p_name:String(data.get('name')).trim(),p_display_name:String(data.get('display_name')).trim()});if(error)throw error;await cloudLoad();toast('Your home is ready');break;}case 'join-project':{busy=true;const {error}=await client.rpc('house_join_project',{p_invitation_code:String(data.get('code')).trim(),p_display_name:String(data.get('display_name')).trim()});if(error)throw error;await cloudLoad();toast('You joined the home');break;}}}catch(error){console.error(error);toast(error.message||'Unable to complete action')}finally{busy=false}});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
   document.addEventListener('click',ev=>{if(ev.target.id==='overlay')closeModal()});
