@@ -1,7 +1,8 @@
-// Add your own Supabase project details here to enable REAL shared collaboration.
-// Copy the Project URL and publishable key (or legacy anon key) from Supabase.
-// Never paste a service_role key or secret key into this file.
+// The House Edit — target Supabase project.
+// The publishable key is configured for the provided Supabase project.
+// Publishable keys (sb_publishable_...) are safe for browser apps when RLS is enabled.
+// NEVER place a secret key, service_role key, or database password here.
 window.HOUSE_EDIT_CONFIG = {
-  supabaseUrl: '',
-  supabasePublishableKey: ''
+  supabaseUrl: 'https://wvguomtivivfiplwzrss.supabase.co',
+  supabasePublishableKey: 'sb_publishable_c2VTWxL1UCfobVu6zK5Cdw_r0NbDpf_'
 };
