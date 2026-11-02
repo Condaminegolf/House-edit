@@ -30,3 +30,18 @@
 
 .product-lookup .retry-product{margin-top:8px;padding:6px 10px;border:1px solid #d5c0af;border-radius:7px;background:#fffaf5;color:#815c42;display:inline-flex;width:auto;font-size:11px}
 .product-lookup .retry-product:hover{background:#f5e8d8}
+
+/* V4 · deliberate destructive actions with generous tap targets */
+.btn.danger-outline{border:1px solid #d7a99e;color:#9b4b40;background:#fffaf8;font-weight:650}
+.btn.danger-outline:hover,.btn.danger-outline:focus-visible{background:#f8eae5;border-color:#bd7c6e}
+.btn.danger-outline:active{transform:translateY(1px)}
+@media(max-width:780px){.option-tools .danger-outline{min-height:42px}.detail-header .head-actions .danger-outline{min-height:42px}}
+
+/* V5 — email/password account screens */
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px;background:#efeee6;border-radius:12px;margin:16px 0 20px}
+.auth-tab{border:0;border-radius:9px;padding:11px 8px;font:inherit;font-weight:650;font-size:13px;color:#718071;background:transparent;cursor:pointer}
+.auth-tab.active{background:#fff;color:#2e4b36;box-shadow:0 2px 9px #263c2717;cursor:default}
+.auth-tab:not(.active):hover{background:#fafaf5}
+.auth-submit{width:100%;justify-content:center;min-height:46px}
+.auth-notice{background:#e7efe4;border:1px solid #c4d6bd;color:#425b42;border-radius:11px;padding:12px 14px;line-height:1.5;font-size:13px;margin:13px 0}
+.account-password-form{max-width:480px;margin-top:15px;padding:17px 19px;background:var(--paper);border:1px solid var(--border);border-radius:13px}
