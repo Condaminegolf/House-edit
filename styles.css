@@ -45,3 +45,127 @@
 .auth-submit{width:100%;justify-content:center;min-height:46px}
 .auth-notice{background:#e7efe4;border:1px solid #c4d6bd;color:#425b42;border-radius:11px;padding:12px 14px;line-height:1.5;font-size:13px;margin:13px 0}
 .account-password-form{max-width:480px;margin-top:15px;padding:17px 19px;background:var(--paper);border:1px solid var(--border);border-radius:13px}
+
+
+/* V6 — iPhone-first layout and Safari safe-area refinements. */
+html{min-width:0;max-width:100%;overflow-x:clip;-webkit-text-size-adjust:100%}
+body{min-width:0;min-height:100vh;min-height:100dvh;overflow-x:clip}
+#app,.shell,.main{min-width:0}
+img,svg,video{max-width:100%}
+button,input,select,textarea{max-width:100%}
+input,textarea,select{min-width:0}
+.breadcrumbs,.decision-info,.option-content,.comment-body,.selection-body,.invite-panel,.person-vote .person-name{min-width:0;overflow-wrap:anywhere}
+.mobile-header-brand{display:none}
+.btn:focus-visible,.chip:focus-visible,.nav:focus-visible,.mobile-nav button:focus-visible,.votebtn:focus-visible,.room-card:focus-visible{outline:3px solid #b37458;outline-offset:2px}
+
+@media (max-width:780px){
+  /* Keep the complete app inside iPhone's visible safe area. */
+  .shell{min-height:100dvh}
+  .main{width:100%;max-width:100%;padding:env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) calc(110px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))}
+  .topline{height:72px;min-height:72px;gap:8px;padding-top:4px;align-items:center}
+  .mobile-header-brand{display:flex;align-items:center;gap:7px;font-family:'DM Serif Display',Georgia,serif;font-size:18px;white-space:nowrap;line-height:1.1}
+  .mobile-header-brand .mobile-logo-mark{width:27px;height:27px;border-radius:8px;display:grid;place-items:center;background:var(--green);color:#fff7e5;font:18px system-ui;flex:none}
+  .mobile-header-brand .accent{color:var(--rust)}
+  .header-left{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px}
+  .breadcrumbs{font-size:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .top-actions{flex:none;gap:0}
+  .top-actions .btn{min-width:44px;min-height:44px;padding:0 10px}
+  .top-actions .hide-small{display:none}
+  .page-head{margin:25px 0 19px;gap:14px}
+  .page-head h1{font-size:clamp(30px,8vw,39px);line-height:1.13;overflow-wrap:anywhere}
+  .page-head p{font-size:13px;line-height:1.55}
+  .head-actions{gap:8px;max-width:100%}
+  .head-actions .btn{min-height:44px;white-space:normal;text-align:center}
+  .section{margin-top:27px}
+  .section-head{gap:10px;align-items:flex-start}
+  .section-head h2{font-size:clamp(21px,5.5vw,27px)}
+  .section-head .btn{min-height:44px;flex:none}
+  .hero{padding:22px 21px;min-height:155px;border-radius:17px}
+  .hero h2{font-size:clamp(25px,7vw,32px);line-height:1.17}
+  .hero:after{right:-35px;font-size:240px}
+  .stat-grid{gap:10px;margin-top:13px}
+  .stat{min-width:0;padding:15px 14px}
+  .stat .num{font-size:clamp(24px,7vw,32px);overflow-wrap:anywhere}
+  .stat .detail{line-height:1.3}
+  .room-grid,.decision-list,.option-grid{gap:11px}
+  .room-body{padding:12px}
+  .room-body .subtext,.room-body p{overflow-wrap:anywhere}
+  .decision-info{padding:15px}
+  .decision-info h3,.option-content h3{overflow-wrap:anywhere}
+  .toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;margin:16px 0 12px}
+  .toolbar .search,.toolbar .select{width:100%;min-width:0;min-height:46px}
+  .toolbar .search input{font-size:16px}
+  .chip-group{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:3px 0 9px;margin-right:0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .chip-group::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;min-height:43px;flex:none;padding:10px 13px}
+  .back{min-height:44px;max-width:100%;text-align:left;white-space:normal}
+  .detail-header{gap:12px;margin-top:8px}
+  .detail-header h1{font-size:clamp(29px,8vw,38px);line-height:1.12;overflow-wrap:anywhere}
+  .detail-intro{font-size:13px;line-height:1.55}
+  .detail-header .head-actions{width:100%}
+  .detail-header .head-actions .btn{flex:1 1 auto;min-height:44px}
+  .notice{align-items:flex-start;line-height:1.5;padding:13px;font-size:12px}
+  .option-media{height:auto;aspect-ratio:1.42;min-height:188px;max-height:290px}
+  .option-content{padding:15px}
+  .option-content h3{font-size:22px}
+  .votebtn{min-width:0;min-height:47px;padding:10px 4px;font-size:12px}
+  .option-actions{gap:5px}
+  .person-vote{gap:7px}
+  .person-vote strong{flex:none;font-size:11px}
+  .comment-field input{font-size:16px;min-height:44px}
+  .comment-field button{min-height:44px}
+  .option-tools .btn{min-height:44px;white-space:normal;text-align:center}
+  .selection-row{display:grid;grid-template-columns:76px minmax(0,1fr);gap:9px 13px;padding:12px;align-items:center}
+  .selection-row .sample{grid-column:1;grid-row:1 / span 2;width:76px;height:76px}
+  .selection-row .selection-body{grid-column:2;grid-row:1 / span 2}
+  .selection-row .tag{grid-column:1;grid-row:3;justify-content:center;font-size:10px;white-space:normal;text-align:center}
+  .selection-row > .btn{grid-column:2;grid-row:3;min-height:44px;width:100%}
+  .selection-row .selection-body small{display:block;overflow-wrap:anywhere}
+  .invite-code{overflow-wrap:anywhere;word-break:break-word;letter-spacing:.03em}
+  .auth-shell{max-width:100%;margin:0;padding:calc(17px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(30px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+  .auth-card{padding:24px 18px;border-radius:18px}
+  .auth-card h1{font-size:clamp(29px,8vw,36px)}
+  .formline input,.formline textarea,.formline select{font-size:16px;min-height:46px}
+  .auth-tab{min-height:44px}
+  .modal-overlay{display:flex;align-items:flex-end;justify-content:center;padding:0;overscroll-behavior:contain}
+  .modal{width:100%;max-width:none;max-height:calc(100dvh - 12px - env(safe-area-inset-top));border-radius:22px 22px 0 0;padding:20px max(17px,env(safe-area-inset-right)) calc(21px + env(safe-area-inset-bottom)) max(17px,env(safe-area-inset-left));overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
+  .modal-head{position:sticky;top:-20px;z-index:2;background:var(--paper);padding:4px 0 12px;margin:-4px 0 2px}
+  .modal-head h2{font-size:clamp(25px,7vw,30px)}
+  .modal-head .btn{min-width:44px;min-height:44px;flex:none}
+  .modal-foot{flex-wrap:wrap}
+  .modal-foot .btn{min-height:45px;flex:1}
+  .modal .btn.primary{min-height:46px}
+  .product-lookup-placeholder,.product-lookup-result{align-items:flex-start;gap:10px;padding:11px}
+  .product-lookup-thumb{width:74px;height:74px}
+  body.modal-open{overflow:hidden;touch-action:pan-y}
+  body.modal-open .mobile-nav{visibility:hidden;pointer-events:none}
+  body:has(input:focus,textarea:focus,select:focus) .mobile-nav{opacity:0;pointer-events:none}
+  .mobile-nav{box-sizing:border-box;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:2px;justify-content:stretch;padding:6px max(8px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));min-height:65px;isolation:isolate;box-shadow:0 -6px 22px rgba(38,53,43,.06)}
+  .mobile-nav button{min-width:0;min-height:50px;display:flex;align-items:center;justify-content:center;padding:4px 2px;gap:3px;font-size:11px;line-height:1.1;border-radius:11px}
+  .mobile-nav .active{background:var(--greenlight);color:var(--green)}
+  .mobile-nav span{font-size:22px;line-height:1}
+  .floating{bottom:calc(78px + env(safe-area-inset-bottom))}
+  #toast{left:16px;right:16px;bottom:calc(80px + env(safe-area-inset-bottom));font-size:13px;text-align:center}
+  .final-bar{padding:15px;min-width:0}
+}
+@media(max-width:360px){
+  .main{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+  .mobile-header-brand{font-size:16px}
+  .topline{height:66px;min-height:66px}
+  .page-head h1{font-size:29px}
+  .room-visual{height:95px}
+  .room-grid{gap:9px}
+  .room-body{padding:10px}
+  .room-body strong{font-size:13px}
+  .head-actions .btn{font-size:12px;padding:10px}
+  .option-media{min-height:175px}
+  .person-vote .person-name{font-size:11px}
+  .option-tools .btn{flex:1 1 auto}
+}
+@media(max-width:780px) and (orientation:landscape){
+  .main{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+  .modal{max-height:calc(100dvh - 4px - env(safe-area-inset-top))}
+  .mobile-nav button{min-height:43px;flex-direction:row;gap:6px}
+  .mobile-nav span{font-size:19px}
+}
+@media(prefers-reduced-motion:reduce){.btn,.room-card,.votebtn,.product-lookup[data-status="pending"] .product-lookup-symbol{transition:none;animation:none}}
